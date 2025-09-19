@@ -1,0 +1,46 @@
+ Que 1. We had a production outage where services running in an EKS cluster started becoming unreachable intermittently. Users reported high response times and some requests were failing.
+
+Solution- We got alerts from CloudWatch Alarms and Prometheus (with Grafana dashboards) about increased pod restarts and latency spikes.
+
+Error logs in ELK stack also showed connection timeouts.
+Checked pod status with "kubectl get pods -n production"  and  "kubectl describe pod" Saw frequent OOMKilled events also pods were running out of memory.
+Used CloudWatch Container Insights to check CPU and memory utilization.
+Identified that a new deployment had shipped a version with increased memory usage but no updated resource limits.Auto-scaler couldn’t keep up because limits were too low.
+Rolled back the deployment quickly using "kubectl rollout undo deployment <deployment-name> -n production" then updated Helm charts to set proper CPU and memory requests and limits.
+Restarted pods with corrected configuration.
+
+For Monitoring we Added fine-grained alerts in Prometheus for pod OOM events and memory thresholds.
+We Documented the rollback and troubleshooting steps, so the next on-call could act faster.
+We also Updated CI/CD pipelines to run load tests in staging before promoting builds.
+As a result, future MTTR dropped from approx 1 hour to less than 15 minutes because we could detect and roll back faster.
+
+
+
+Que 2. Explain your experience in building/optimizing CI/CD pipelines (tools used, rollback strategy, and security/observability integrations).
+
+Solution- 
+GitHub Actions: Used for lightweight automation, PR validation, and infra changes with Terraform.
+Terraform: Infrastructure provisioning integrated into pipelines for AWS resources.
+Docker & Kubernetes (EKS): Packaged and deployed applications in containers.
+Artifact Management: Stored builds in JFrog Artifactory.
+
+Used Terraform remote state with locking (S3 + DynamoDB) → safer infra deployments.
+Added blue/green & canary deployments on Kubernetes → minimized downtime during rollouts.
+
+Undo Deployment- kubectl rollout undo deployment
+Terraform: Version-controlled IaC in Git where we reverted to previous commit and reapplied.
+
+Integrated tools like SonarQube and Trivy into pipelines for code and image scanning.
+Avoided hardcoded secrets by using AWS Secrets Manager and GitHub Secrets.
+Ensured service accounts and roles used by pipelines had minimal access.
+
+Prometheus and Grafana: Monitored deployments, pipeline success and failure metrics.
+
+
+Que 3. Share an example where you used Infrastructure as Code (Terraform/Ansible) to automate cloud infrastructure at scale. What problems did it solve?
+
+Solution- 
+Broke down infrastructure into reusable Terraform modules (VPC, subnets, EC2, RDS, S3, IAM roles).
+Used S3 bucket + DynamoDB lock for Terraform state that ensured team collaboration without conflicts.
+Integrated Terraform plans & applies into GitHub Actions where On pull requests  pipeline ran terraform plan and posted changes for review.
+And On merge pipeline ran terraform apply safely.

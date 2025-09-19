@@ -40,7 +40,7 @@ Prometheus and Grafana: Monitored deployments, pipeline success and failure metr
 Que 3. Share an example where you used Infrastructure as Code (Terraform/Ansible) to automate cloud infrastructure at scale. What problems did it solve?
 
 Solution- 
-Broke down infrastructure into reusable Terraform modules (VPC, subnets, EC2, RDS, S3, IAM roles).
+We broke down infrastructure into reusable Terraform modules (VPC, subnets, EC2, RDS, S3, IAM roles).
 Used S3 bucket + DynamoDB lock for Terraform state that ensured team collaboration without conflicts.
 Integrated Terraform plans & applies into GitHub Actions where On pull requests  pipeline ran terraform plan and posted changes for review.
 And On merge pipeline ran terraform apply safely.
